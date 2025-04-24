@@ -9,7 +9,7 @@
 struct __SSD1306_HandleTypeDef;
 typedef struct __SSD1306_HandleTypeDef* SSD1306_HandleTypeDef;
 
-void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin sck_pin, struct GPIO_Pin sda_pin, struct GPIO_Pin dc_pin, struct GPIO_Pin cs_pin, size_t width, size_t height);
+void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5], size_t width, size_t height);
 void SSD1306_SetSckPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin);
 void SSD1306_SetSdaPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin);
 void SSD1306_SetDcPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin);

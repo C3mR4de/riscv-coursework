@@ -1,103 +1,107 @@
 #include <stdbool.h>
 #include <SSD1306.h>
 
+// #define SCR1_TIMER_GET_TIME() \
+//   (((uint64_t)(SCR1_TIMER->MTIMEH) << 32) | (SCR1_TIMER->MTIME))
+
+// #define SYSTEM_FREQ_HZ 32000000UL
+
+// #define SET_TWO_BIT(REG, NUM, TWO_BITS) \
+//   do { (REG) = (((REG) & ~(PAD_CONFIG_PIN_M(NUM))) | (PAD_CONFIG_PIN(NUM, TWO_BITS))); } while (false)
+
+static void SystemClock_Config(void);
 static void SPI_Init(void);
 static void GPIO_Init(void);
 
 static SPI_HandleTypeDef hspi;
-static struct GPIO_Pin sck_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_2};
-static struct GPIO_Pin sda_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_1};
-static struct GPIO_Pin res_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_8};
-static struct GPIO_Pin dc_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_3};
-static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
+static struct GPIO_Pin sck_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_2}; // Пин D6 (SCK, D0)
+static struct GPIO_Pin sda_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_1}; // Пин D5 (MOSI, D1)
+static struct GPIO_Pin res_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_5}; // Пин D0
+static struct GPIO_Pin dc_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_6}; // Пин D1
+static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пин A2
+
+#define BUFFER_SIZE 1024
+static uint8_t buffer[BUFFER_SIZE];
 
 int main()
 {
+    SystemClock_Config();
     SPI_Init();
     GPIO_Init();
 
     SSD1306_HandleTypeDef display;
-    SSD1306_Init(&display, sck_pin, sda_pin, dc_pin, cs_pin, 128, 64);
-
-    HAL_GPIO_WritePin(res_pin.gpio, res_pin.pin, GPIO_PIN_HIGH);
-    HAL_DelayMs(10);
-    HAL_GPIO_WritePin(res_pin.gpio, res_pin.pin, GPIO_PIN_LOW);
-    HAL_DelayMs(10);
-
-    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
-
-    SSD1306_SendCommand(&display, &hspi, 0xAE);
-    SSD1306_SendCommand(&display, &hspi, 0xD5);
-    SSD1306_SendCommand(&display, &hspi, 0x80);
-    SSD1306_SendCommand(&display, &hspi, 0xA8);
-    SSD1306_SendCommand(&display, &hspi, 0x3F);
-    SSD1306_SendCommand(&display, &hspi, 0xD3);
-    SSD1306_SendCommand(&display, &hspi, 0x00);
-    SSD1306_SendCommand(&display, &hspi, 0x40);
-    SSD1306_SendCommand(&display, &hspi, 0x8D);
-    SSD1306_SendCommand(&display, &hspi, 0x14);
-    SSD1306_SendCommand(&display, &hspi, 0x20);
-    SSD1306_SendCommand(&display, &hspi, 0x00);
-    SSD1306_SendCommand(&display, &hspi, 0xA1);
-    SSD1306_SendCommand(&display, &hspi, 0xC8);
-    SSD1306_SendCommand(&display, &hspi, 0xDA);
-    SSD1306_SendCommand(&display, &hspi, 0x12);
-    SSD1306_SendCommand(&display, &hspi, 0x81);
-    SSD1306_SendCommand(&display, &hspi, 0xCF);
-    SSD1306_SendCommand(&display, &hspi, 0xD9);
-    SSD1306_SendCommand(&display, &hspi, 0xF1);
-    SSD1306_SendCommand(&display, &hspi, 0xDB);
-    SSD1306_SendCommand(&display, &hspi, 0x40);
-    SSD1306_SendCommand(&display, &hspi, 0xA4);
-    SSD1306_SendCommand(&display, &hspi, 0xA6);
-    SSD1306_SendCommand(&display, &hspi, 0xAF);
-
-    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH);
+    SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin}, 128, 64);
  
     while (true)
     {
-        HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
 
-        SSD1306_SendCommand(&display, &hspi, 0x22);
-        SSD1306_SendCommand(&display, &hspi, 0x00);
-        SSD1306_SendCommand(&display, &hspi, 0x02);
-        SSD1306_SendCommand(&display, &hspi, 0x40);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-        SSD1306_SendCommand(&display, &hspi, 0xFF);
-
-        HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH);
     }
+}
+
+static void SystemClock_Config(void)
+{
+    WU->CLOCKS_SYS &=
+        ~(0b11 << WU_CLOCKS_SYS_OSC32M_EN_S); // Включить OSC32M и HSI32M
+    WU->CLOCKS_BU &=
+        ~(0b11 << WU_CLOCKS_BU_OSC32K_EN_S); // Включить OSC32K и LSI32K
+  
+    // Поправочный коэффициент HSI32M
+    WU->CLOCKS_SYS = (WU->CLOCKS_SYS & (~WU_CLOCKS_SYS_ADJ_HSI32M_M)) |
+                      WU_CLOCKS_SYS_ADJ_HSI32M(128);
+
+    // Поправочный коэффициент LSI32K
+    WU->CLOCKS_BU = (WU->CLOCKS_BU & (~WU_CLOCKS_BU_ADJ_LSI32K_M)) |
+                     WU_CLOCKS_BU_ADJ_LSI32K(8);
+
+    // Автоматический выбор источника опорного тактирования
+    WU->CLOCKS_SYS &= ~WU_CLOCKS_SYS_FORCE_32K_CLK_M;
+
+    // ожидание готовности
+    while (!(PM->FREQ_STATUS & PM_FREQ_STATUS_OSC32M_M));
+
+    // переключение на тактирование от OSC32M
+    PM->AHB_CLK_MUX = PM_AHB_CLK_MUX_OSC32M_M | PM_AHB_FORCE_MUX_UNFIXED;
+    PM->DIV_AHB = 0;   // Задать делитель шины AHB.
+    PM->DIV_APB_M = 0; // Задать делитель шины APB_M.
+    PM->DIV_APB_P = 0; // Задать делитель шины APB_P.
 }
 
 static void SPI_Init(void)
 {
     SPI_InitTypeDef spi_init =
     {
-        .SPI_Mode    = HAL_SPI_MODE_MASTER,
+        .SPI_Mode = HAL_SPI_MODE_MASTER,
         .BaudRateDiv = SPI_BAUDRATE_DIV64,
-        .ManualCS    = SPI_MANUALCS_OFF,
-        .CLKPhase    = SPI_PHASE_OFF,
+        .ManualCS = SPI_MANUALCS_OFF,
+        .CLKPhase = SPI_PHASE_OFF,
         .CLKPolarity = SPI_POLARITY_LOW,
-        .Decoder     = SPI_DECODER_NONE,
-        .ChipSelect  = SPI_CS_1
+        .Decoder = SPI_DECODER_NONE,
+        .ChipSelect = SPI_CS_0
     };
 
-    hspi.Init     = spi_init;
-    hspi.Instance = SPI_1;
+    hspi.Instance = SPI_0;
+    hspi.Init = spi_init;
 
-    HAL_SPI_Init(&hspi);
-    HAL_SPI_Enable(&hspi);
-    HAL_SPI_CS_Enable(&hspi, 1);
+    if (HAL_SPI_Init(&hspi) == HAL_OK)
+    {
+        HAL_SPI_Enable(&hspi);
+    }
 }
 
 static void GPIO_Init(void)
 {
+    /**< Включить  тактирование GPIO_0 */
+    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_0_M;
+
+    /**< Включить  тактирование GPIO_1 */
+    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_1_M;
+
+    /**< Включить  тактирование GPIO_2 */
+    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_2_M;
+
+    /**< Включить  тактирование схемы формирования прерываний GPIO */
+    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_IRQ_M;
+
     GPIO_InitTypeDef gpio_sck =
     {
         .Pin  = sck_pin.pin,
