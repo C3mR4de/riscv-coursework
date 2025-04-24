@@ -16,6 +16,7 @@ struct __SSD1306_HandleTypeDef
 
 #define MAX_DISPLAYS 1
 #define HAL_MAX_DELAY 0xFFFFFFFF
+#define BUFFER_SIZE 1024
 
 static struct __SSD1306_HandleTypeDef devices[MAX_DISPLAYS];
 static size_t count;
@@ -85,22 +86,25 @@ void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, stru
 
     HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH); // CS = HIGH
 
-    uint8_t display_data[1024] = {0};
-    uint8_t rx[1024];
-    memset(display_data, 0xFF, sizeof(display_data)); // Все пиксели включены
+    uint8_t display_data[BUFFER_SIZE] = {0};
+    SSD1306_DrawFrame(hssd1306, display_data, BUFFER_SIZE);
 
-    bool on = true;
+    // uint8_t display_data[1024] = {0};
+    // uint8_t rx[1024];
+    // memset(display_data, 0xFF, sizeof(display_data)); // Все пиксели включены
 
-    while (true)
-    {
-        // Заливка экрана
-        HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
-        HAL_GPIO_WritePin(dc_pin.gpio, dc_pin.pin, GPIO_PIN_HIGH);
-        HAL_SPI_Exchange(hspi, on ? display_data : rx, rx, sizeof(display_data), HAL_MAX_DELAY);
-        HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH);
-        on = !on;
-        HAL_DelayMs(1000);
-    }
+    // bool on = true;
+
+    // while (true)
+    // {
+    //     // Заливка экрана
+    //     HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
+    //     HAL_GPIO_WritePin(dc_pin.gpio, dc_pin.pin, GPIO_PIN_HIGH);
+    //     HAL_SPI_Exchange(hspi, on ? display_data : rx, rx, sizeof(display_data), HAL_MAX_DELAY);
+    //     HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH);
+    //     on = !on;
+    //     HAL_DelayMs(1000);
+    // }
 
     // uint8_t white[128] = { [0 ... 127] = 0xFF }; // строка из единиц (все пиксели включены)
     // uint8_t black[128] = { [0 ... 127] = 0x00 }; // строка из единиц (все пиксели включены)
@@ -138,55 +142,46 @@ void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, stru
     // }
 }
 
-void SSD1306_SetSckPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
-{
-    (*hssd1306)->sck_pin = pin;
-}
+// void SSD1306_SetSckPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
+// {
+//     (*hssd1306)->sck_pin = pin;
+// }
 
-void SSD1306_SetSdaPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
-{
-    (*hssd1306)->sda_pin = pin;
-}
+// void SSD1306_SetSdaPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
+// {
+//     (*hssd1306)->sda_pin = pin;
+// }
 
-void SSD1306_SetDcPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
-{
-    (*hssd1306)->dc_pin = pin;
-}
+// void SSD1306_SetDcPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
+// {
+//     (*hssd1306)->dc_pin = pin;
+// }
 
-void SSD1306_SetCsPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
-{
-    (*hssd1306)->cs_pin = pin;
-}
+// void SSD1306_SetCsPin(SSD1306_HandleTypeDef* hssd1306, struct GPIO_Pin pin)
+// {
+//     (*hssd1306)->cs_pin = pin;
+// }
 
-void SSD1306_SetWidth(SSD1306_HandleTypeDef* hssd1306, size_t width)
-{
-    (*hssd1306)->width = width;
-}
+// void SSD1306_SetWidth(SSD1306_HandleTypeDef* hssd1306, size_t width)
+// {
+//     (*hssd1306)->width = width;
+// }
 
-void SSD1306_SetHeight(SSD1306_HandleTypeDef* hssd1306, size_t height)
-{
-    (*hssd1306)->height = height;
-}
+// void SSD1306_SetHeight(SSD1306_HandleTypeDef* hssd1306, size_t height)
+// {
+//     (*hssd1306)->height = height;
+// }
 
-void SSD1306_SendCommand(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, uint8_t command)
+void SSD1306_DrawFrame(SSD1306_HandleTypeDef* const hssd1306, uint8_t* const buffer, const size_t size)
 {
-    HAL_GPIO_WritePin((*hssd1306)->dc_pin.gpio, (*hssd1306)->dc_pin.pin, GPIO_PIN_LOW);
-    HAL_DelayMs(10);
-    //HAL_GPIO_WritePin((*hssd1306)->cs_pin.gpio, (*hssd1306)->cs_pin.pin, GPIO_PIN_LOW);
-    //HAL_DelayMs(10);
-    uint8_t receive[1];
-    HAL_SPI_Exchange(hspi, &command, receive, 1, HAL_MAX_DELAY);
-    HAL_DelayMs(10);
-    //HAL_GPIO_WritePin((*hssd1306)->cs_pin.gpio, (*hssd1306)->cs_pin.pin, GPIO_PIN_HIGH);
-}
+    uint8_t rx[size];
 
-void SSD1306_SendData(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, uint8_t data)
-{
-    HAL_GPIO_WritePin((*hssd1306)->dc_pin.gpio, (*hssd1306)->dc_pin.pin, GPIO_PIN_HIGH);
-    HAL_DelayMs(10);
-    //HAL_GPIO_WritePin((*hssd1306)->cs_pin.gpio, (*hssd1306)->cs_pin.pin, GPIO_PIN_LOW);
-    uint8_t receive[1];
-    HAL_SPI_Exchange(hspi, &data, receive, 1, HAL_MAX_DELAY);
-    HAL_DelayMs(10);
-    //HAL_GPIO_WritePin((*hssd1306)->cs_pin.gpio, (*hssd1306)->cs_pin.pin, GPIO_PIN_HIGH);
+    SPI_HandleTypeDef* const hspi = (*hssd1306)->hspi;
+    const struct GPIO_Pin cs_pin = (*hssd1306)->cs_pin;
+    const struct GPIO_Pin dc_pin = (*hssd1306)->dc_pin;
+
+    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
+    HAL_GPIO_WritePin(dc_pin.gpio, dc_pin.pin, GPIO_PIN_HIGH);
+    HAL_SPI_Exchange(hspi, buffer, rx, size, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH);
 }

@@ -1,13 +1,15 @@
 #include <stdbool.h>
 #include <SSD1306.h>
 
-// #define SCR1_TIMER_GET_TIME() \
-//   (((uint64_t)(SCR1_TIMER->MTIMEH) << 32) | (SCR1_TIMER->MTIME))
+/*
+#define SCR1_TIMER_GET_TIME() \
+    (((uint64_t)(SCR1_TIMER->MTIMEH) << 32) | (SCR1_TIMER->MTIME))
 
-// #define SYSTEM_FREQ_HZ 32000000UL
+#define SYSTEM_FREQ_HZ 32000000UL
 
-// #define SET_TWO_BIT(REG, NUM, TWO_BITS) \
-//   do { (REG) = (((REG) & ~(PAD_CONFIG_PIN_M(NUM))) | (PAD_CONFIG_PIN(NUM, TWO_BITS))); } while (false)
+#define SET_TWO_BIT(REG, NUM, TWO_BITS) \
+    do { (REG) = (((REG) & ~(PAD_CONFIG_PIN_M(NUM))) | (PAD_CONFIG_PIN(NUM, TWO_BITS))); } while (false)
+*/
 
 static void SystemClock_Config(void);
 static void SPI_Init(void);
@@ -20,8 +22,25 @@ static struct GPIO_Pin res_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_5}; // Пи�
 static struct GPIO_Pin dc_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_6}; // Пин D1
 static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пин A2
 
-#define BUFFER_SIZE 1024
-static uint8_t buffer[BUFFER_SIZE];
+#define BUFFER_SIZE   1024
+#define SCREEN_WIDTH  128
+#define SCREEN_HEIGHT 64
+
+static uint8_t    buffer[BUFFER_SIZE];
+static const char plane[11][15] =
+{
+    "000000010000000",
+    "000000010000000",
+    "000000111000000",
+    "000001111100000",
+    "000111111111000",
+    "011111111111110",
+    "111111010111111",
+    "111000010000111",
+    "110000010000011",
+    "100000000000001",
+    "100000000000001"
+};
 
 int main()
 {
@@ -30,11 +49,26 @@ int main()
     GPIO_Init();
 
     SSD1306_HandleTypeDef display;
-    SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin}, 128, 64);
- 
+    SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin}, SCREEN_WIDTH, SCREEN_HEIGHT);
+
     while (true)
     {
+        for (size_t y = 0; y < 11; ++y)
+        {
+            for (size_t x = 0; x < 15; ++x)
+            {
+                if (plane[y][x] == '1')
+                {
+                    buffer[x + (y / 8) * SCREEN_WIDTH] |= (1 << (y % 8));
+                }
+                else
+                {
+                    buffer[x + (y / 8) * SCREEN_WIDTH] &= ~(1 << (y % 8));
+                }
+            }
+        }
 
+        SSD1306_DrawFrame(&display, buffer, BUFFER_SIZE);
     }
 }
 
