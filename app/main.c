@@ -22,11 +22,10 @@ static struct GPIO_Pin res_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_5}; // Пи�
 static struct GPIO_Pin dc_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_6}; // Пин D1
 static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пин A2
 
-#define BUFFER_SIZE   1024
 #define SCREEN_WIDTH  128
 #define SCREEN_HEIGHT 64
 
-static uint8_t    buffer[BUFFER_SIZE];
+static uint8_t    buffer[SSD1306_BUFFER_SIZE];
 static const char plane[11][15] =
 {
     "000000010000000",
@@ -49,7 +48,7 @@ int main()
     GPIO_Init();
 
     SSD1306_HandleTypeDef display;
-    SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin}, SCREEN_WIDTH, SCREEN_HEIGHT);
+    SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
 
     while (true)
     {
@@ -68,7 +67,7 @@ int main()
             }
         }
 
-        SSD1306_DrawFrame(&display, buffer, BUFFER_SIZE);
+        SSD1306_DrawFrame(&display, buffer, SSD1306_BUFFER_SIZE);
     }
 }
 
