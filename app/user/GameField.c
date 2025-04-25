@@ -37,7 +37,7 @@ void GameField_Init(GameField* game_field, uint8_t* map, size_t size, size_t wid
         {
             const size_t x     = (*game_field)->plane.x + j;
             const size_t y     = (*game_field)->plane.y + i;
-            const bool   state = (*game_field)->plane.texture[i * (*game_field)->plane.width + j] == 0x31;
+            const bool   state = (*game_field)->plane.texture[i * (*game_field)->plane.width + j];
 
             GameField_SetPixel(game_field, x, y, state);
         }
@@ -66,7 +66,7 @@ void GameField_MovePlane(GameField* game_field, size_t dx, size_t dy)
         {
             const size_t x     = (*game_field)->plane.x + j;
             const size_t y     = (*game_field)->plane.y + i;
-            const bool   state = (*game_field)->plane.texture[i * (*game_field)->plane.width + j] == 0x31;
+            const bool   state = (*game_field)->plane.texture[i * (*game_field)->plane.width + j];
 
             GameField_SetPixel(game_field, x, y, state);
         }
