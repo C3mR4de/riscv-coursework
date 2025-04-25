@@ -13,26 +13,21 @@ static struct GPIO_Pin res_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_5}; // Пи�
 static struct GPIO_Pin dc_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_6}; // Пин D1
 static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пин A2
 
-#define SCREEN_WIDTH  128
-#define SCREEN_HEIGHT 64
+#define PLANE_WIDTH  16
+#define PLANE_HEIGHT 10
 
-#define PLANE_WIDTH  15
-#define PLANE_HEIGHT 11
-
-static uint8_t       buffer[SSD1306_BUFFER_SIZE];
-static const uint8_t plane[PLANE_HEIGHT][PLANE_WIDTH] =
+static uint8_t       map[SSD1306_BUFFER_SIZE];
+static const uint8_t plane_texture[PLANE_WIDTH * PLANE_HEIGHT] =
 {
-    "000000010000000",
-    "000000010000000",
-    "000000111000000",
-    "000001111100000",
-    "000111111111000",
-    "011111111111110",
-    "111111010111111",
-    "111000010000111",
-    "110000010000011",
-    "100000000000001",
-    "100000000000001"
+    0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+    0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31, 0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30,
+    0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30,
+    0x30, 0x30, 0x30, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x30, 0x30, 0x30,
+    0x30, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x30,
+    0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x30, 0x31, 0x31, 0x30, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31,
+    0x31, 0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31, 0x31,
+    0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31, 0x31,
+    0x31, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x31,
 };
 
 int main()
@@ -44,19 +39,22 @@ int main()
     SSD1306_HandleTypeDef display;
     SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
 
-    struct GameField game_field =
+    static const size_t start_x = (SCREEN_WIDTH - PLANE_WIDTH) / 2;
+    static const size_t start_y = (SCREEN_HEIGHT - PLANE_HEIGHT) / 2;
+
+    GameField game_field;
+    GameField_Init(&game_field, map, SSD1306_BUFFER_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT, (struct Plane)
     {
-        buffer,
-        SSD1306_BUFFER_SIZE,
-        SCREEN_WIDTH,
-        SCREEN_HEIGHT,
-        (struct Plane){15, 17, PLANE_WIDTH, PLANE_HEIGHT, (const uint8_t**)plane}
-    };
+        .x       = start_x,
+        .y       = start_y,
+        .width   = PLANE_WIDTH,
+        .height  = PLANE_HEIGHT,
+        .texture = plane_texture
+    });
 
     while (true)
     {
-        GameField_MovePlane(&game_field, 0, 0);
-        SSD1306_DrawFrame(&display, game_field.buffer, SSD1306_BUFFER_SIZE);
+        SSD1306_DrawFrame(&display, map, SSD1306_BUFFER_SIZE);
     }
 }
 
@@ -66,7 +64,7 @@ static void SystemClock_Config(void)
         ~(0b11 << WU_CLOCKS_SYS_OSC32M_EN_S); // Включить OSC32M и HSI32M
     WU->CLOCKS_BU &=
         ~(0b11 << WU_CLOCKS_BU_OSC32K_EN_S); // Включить OSC32K и LSI32K
-  
+
     // Поправочный коэффициент HSI32M
     WU->CLOCKS_SYS = (WU->CLOCKS_SYS & (~WU_CLOCKS_SYS_ADJ_HSI32M_M)) |
                       WU_CLOCKS_SYS_ADJ_HSI32M(128);

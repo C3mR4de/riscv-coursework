@@ -28,7 +28,7 @@ void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, stru
     const struct GPIO_Pin dc_pin  = pins[3];
     const struct GPIO_Pin cs_pin  = pins[4];
 
-    **hssd1306 = (struct __SSD1306_HandleTypeDef)
+    *hssd1306[count - 1] = (struct __SSD1306_HandleTypeDef)
     {
         hspi,
         sck_pin,

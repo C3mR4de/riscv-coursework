@@ -4,15 +4,10 @@
 #include <stddef.h>
 #include "Plane.h"
 
-struct GameField
-{
-    uint8_t* buffer;
-    const size_t size;
-    const size_t width;
-    const size_t height;
-    struct Plane plane;
-};
+struct __GameField;
+typedef struct __GameField* GameField;
 
-void GameField_MovePlane(struct GameField* game_field, size_t dx, size_t dy);
+void GameField_Init(GameField* game_field, uint8_t* map, size_t size, size_t width, size_t height, struct Plane plane);
+void GameField_MovePlane(GameField* game_field, size_t dx, size_t dy);
 
 #endif
