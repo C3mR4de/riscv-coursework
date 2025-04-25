@@ -15,7 +15,8 @@ struct __GameField
 static struct __GameField fields[MAX_FIELDS];
 static size_t count;
 
-static void GameField_SetPixel(GameField* game_field, size_t x, size_t y, bool state);
+static void   GameField_SetPixel(GameField* game_field, size_t x, size_t y, bool state);
+static size_t GameField_Clamp(size_t value, size_t low, size_t high);
 
 void GameField_Init(GameField* game_field, uint8_t* map, size_t size, size_t width, size_t height, struct Plane plane)
 {
@@ -49,18 +50,25 @@ void GameField_MovePlane(GameField* game_field, size_t dx, size_t dy)
     {
         for (size_t j = 0; j < (*game_field)->plane.width; ++j)
         {
-            GameField_SetPixel(game_field, (*game_field)->plane.x + j, (*game_field)->plane.y + i, false);
+            const size_t x = (*game_field)->plane.x + j;
+            const size_t y = (*game_field)->plane.y + i;
+
+            GameField_SetPixel(game_field, x, y, false);
         }
     }
 
-    (*game_field)->plane.x += dx;
-    (*game_field)->plane.y += dy;
+    (*game_field)->plane.x = GameField_Clamp((ptrdiff_t)(*game_field)->plane.x + (ptrdiff_t)dx, 0, (*game_field)->width - (*game_field)->plane.width);
+    (*game_field)->plane.y = GameField_Clamp((ptrdiff_t)(*game_field)->plane.y + (ptrdiff_t)dy, 0, (*game_field)->height - (*game_field)->plane.height);
 
     for (size_t i = 0; i < (*game_field)->plane.height; ++i)
     {
         for (size_t j = 0; j < (*game_field)->plane.width; ++j)
         {
-            GameField_SetPixel(game_field, (*game_field)->plane.x + j, (*game_field)->plane.y + i, (*game_field)->plane.texture[i * (*game_field)->plane.height + j] == 0x31);
+            const size_t x     = (*game_field)->plane.x + j;
+            const size_t y     = (*game_field)->plane.y + i;
+            const bool   state = (*game_field)->plane.texture[i * (*game_field)->plane.width + j] == 0x31;
+
+            GameField_SetPixel(game_field, x, y, state);
         }
     }
 }
@@ -78,4 +86,9 @@ static void GameField_SetPixel(GameField* game_field, size_t x, size_t y, bool s
             (*game_field)->map[x + (y / 8) * (*game_field)->width] &= ~(1 << (y % 8));
         }
     }
+}
+
+static size_t GameField_Clamp(size_t value, size_t low, size_t high)
+{
+    return (ptrdiff_t)value < (ptrdiff_t)low ? low : value > high ? high : value;
 }

@@ -54,6 +54,7 @@ int main()
 
     while (true)
     {
+        GameField_MovePlane(&game_field, -1, -1);
         SSD1306_DrawFrame(&display, map, SSD1306_BUFFER_SIZE);
     }
 }
