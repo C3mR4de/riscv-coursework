@@ -39,7 +39,7 @@ int main()
     SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
 
     static const size_t start_x = (SCREEN_WIDTH - PLANE_WIDTH) / 2;
-    static const size_t start_y = (SCREEN_HEIGHT - PLANE_HEIGHT) / 2;
+    static const size_t start_y = (SCREEN_HEIGHT - PLANE_HEIGHT) * 7 / 8;
 
     GameField game_field;
     GameField_Init(&game_field, map, SSD1306_BUFFER_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT, (struct Plane)
@@ -53,7 +53,7 @@ int main()
 
     while (true)
     {
-        GameField_MovePlane(&game_field, -1, -1);
+        GameField_MovePlane(&game_field, 0, 0);
         SSD1306_DrawFrame(&display, map, SSD1306_BUFFER_SIZE);
     }
 }
