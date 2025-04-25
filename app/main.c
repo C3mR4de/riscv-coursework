@@ -1,15 +1,6 @@
 #include <stdbool.h>
 #include <SSD1306.h>
-
-/*
-#define SCR1_TIMER_GET_TIME() \
-    (((uint64_t)(SCR1_TIMER->MTIMEH) << 32) | (SCR1_TIMER->MTIME))
-
-#define SYSTEM_FREQ_HZ 32000000UL
-
-#define SET_TWO_BIT(REG, NUM, TWO_BITS) \
-    do { (REG) = (((REG) & ~(PAD_CONFIG_PIN_M(NUM))) | (PAD_CONFIG_PIN(NUM, TWO_BITS))); } while (false)
-*/
+#include <GameField.h>
 
 static void SystemClock_Config(void);
 static void SPI_Init(void);
@@ -25,8 +16,11 @@ static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пи�
 #define SCREEN_WIDTH  128
 #define SCREEN_HEIGHT 64
 
-static uint8_t    buffer[SSD1306_BUFFER_SIZE];
-static const char plane[11][15] =
+#define PLANE_WIDTH  15
+#define PLANE_HEIGHT 11
+
+static uint8_t       buffer[SSD1306_BUFFER_SIZE];
+static const uint8_t plane[PLANE_HEIGHT][PLANE_WIDTH] =
 {
     "000000010000000",
     "000000010000000",
@@ -50,24 +44,19 @@ int main()
     SSD1306_HandleTypeDef display;
     SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
 
+    struct GameField game_field =
+    {
+        buffer,
+        SSD1306_BUFFER_SIZE,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
+        (struct Plane){15, 17, PLANE_WIDTH, PLANE_HEIGHT, (const uint8_t**)plane}
+    };
+
     while (true)
     {
-        for (size_t y = 0; y < 11; ++y)
-        {
-            for (size_t x = 0; x < 15; ++x)
-            {
-                if (plane[y][x] == '1')
-                {
-                    buffer[x + (y / 8) * SCREEN_WIDTH] |= (1 << (y % 8));
-                }
-                else
-                {
-                    buffer[x + (y / 8) * SCREEN_WIDTH] &= ~(1 << (y % 8));
-                }
-            }
-        }
-
-        SSD1306_DrawFrame(&display, buffer, SSD1306_BUFFER_SIZE);
+        GameField_MovePlane(&game_field, 0, 0);
+        SSD1306_DrawFrame(&display, game_field.buffer, SSD1306_BUFFER_SIZE);
     }
 }
 
