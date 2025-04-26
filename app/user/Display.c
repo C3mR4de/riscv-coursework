@@ -12,8 +12,9 @@ struct __Display
     struct GPIO_Pin    cs_pin;
 };
 
-#define MAX_DISPLAYS  1
-#define HAL_MAX_DELAY 0xFFFFFFFF
+#define MAX_DISPLAYS      1
+#define HAL_MAX_DELAY     0xFFFFFFFF
+#define LCD_INIT_DELAY_MS 100
 
 static struct __Display displays[MAX_DISPLAYS];
 static size_t count;
@@ -61,10 +62,10 @@ void Display_Init(Display* const display, SPI_HandleTypeDef* const hspi, struct 
 
     // Сбрасываем LCD
     HAL_GPIO_WritePin(res_pin.gpio, res_pin.pin, GPIO_PIN_LOW);
-    HAL_DelayMs(100);
+    HAL_DelayMs(LCD_INIT_DELAY_MS);
 
     HAL_GPIO_WritePin(res_pin.gpio, res_pin.pin, GPIO_PIN_HIGH);
-    HAL_DelayMs(100);
+    HAL_DelayMs(LCD_INIT_DELAY_MS);
 
     // Отправка команд инициализации
     HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW); // CS = LOW
