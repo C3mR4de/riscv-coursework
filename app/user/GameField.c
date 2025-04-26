@@ -24,11 +24,11 @@ void GameField_Init(GameField* game_field, uint8_t* map, size_t size, size_t wid
 
     *game_field[count - 1] = (struct __GameField)
     {
-        map,
-        size,
-        width,
-        height,
-        plane
+        .map    = map,
+        .size   = size,
+        .width  = width,
+        .height = height,
+        .plane  = plane
     };
 
     for (size_t i = 0; i < (*game_field)->plane.height; ++i)

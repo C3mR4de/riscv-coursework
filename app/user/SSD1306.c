@@ -30,12 +30,12 @@ void SSD1306_Init(SSD1306* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pi
 
     *hssd1306[count - 1] = (struct __SSD1306)
     {
-        hspi,
-        sck_pin,
-        sda_pin,
-        res_pin,
-        dc_pin,
-        cs_pin,
+        .hspi    = hspi,
+        .sck_pin = sck_pin,
+        .sda_pin = sda_pin,
+        .res_pin = res_pin,
+        .dc_pin  = dc_pin,
+        .cs_pin  = cs_pin,
     };
 
     // Инициализируем дисплей
