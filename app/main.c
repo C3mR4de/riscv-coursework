@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <SSD1306.h>
 #include <GameField.h>
+#include <Joystick.h>
 
 static void SystemClock_Config(void);
 static void SPI_Init(void);
@@ -25,6 +26,10 @@ static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пи�
 // Пины джойстика
 static struct GPIO_Pin adc_x_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_7};
 static struct GPIO_Pin adc_y_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
+
+// Каналы джойстика
+#define JOYSTICK_CHANNEL_X ADC_CHANNEL0
+#define JOYSTICK_CHANNEL_Y ADC_CHANNEL1
 
 #define PLANE_WIDTH  16
 #define PLANE_HEIGHT 10
@@ -67,25 +72,13 @@ int main()
         .texture = plane_texture
     });
 
-    HAL_ADC_ContinuousEnable(&hadc);
-
-    hadc.Init.Sel = ADC_CHANNEL0;
-    HAL_ADC_ChannelSet(&hadc);
-    const int16_t zero_x = (int16_t)HAL_ADC_GetValue(&hadc); // 2983 (zero) 4095 (left) 213 (right)
-
-    hadc.Init.Sel = ADC_CHANNEL1;
-    HAL_ADC_ChannelSet(&hadc);
-    const int16_t zero_y = (int16_t)HAL_ADC_GetValue(&hadc); // 2907 (zero) 225 (up) 4095 (down)
+    Joystick joystick;
+    Joystick_Init(&joystick, &hadc, JOYSTICK_CHANNEL_X, JOYSTICK_CHANNEL_Y);
 
     while (true)
     {
-        hadc.Init.Sel = ADC_CHANNEL0;
-        HAL_ADC_ChannelSet(&hadc);
-        int16_t dx = -(((int16_t)HAL_ADC_GetValue(&hadc) - zero_x) / 128);
-
-        hadc.Init.Sel = ADC_CHANNEL1;
-        HAL_ADC_ChannelSet(&hadc);
-        int16_t dy = (((int16_t)HAL_ADC_GetValue(&hadc) - zero_y) / 128);
+        const int16_t dx = Joystick_ReadX(&joystick);
+        const int16_t dy = Joystick_ReadY(&joystick);
 
         xprintf("dx = %d; dy = %d;\r\n", dx, dy);
 
