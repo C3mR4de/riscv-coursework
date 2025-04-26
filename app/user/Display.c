@@ -1,8 +1,8 @@
-#include "SSD1306.h"
+#include "Display.h"
 #include <string.h>
 #include <stdbool.h>
 
-struct __SSD1306
+struct __Display
 {
     SPI_HandleTypeDef* hspi;
     struct GPIO_Pin sck_pin;
@@ -15,12 +15,12 @@ struct __SSD1306
 #define MAX_DISPLAYS  1
 #define HAL_MAX_DELAY 0xFFFFFFFF
 
-static struct __SSD1306 devices[MAX_DISPLAYS];
+static struct __Display displays[MAX_DISPLAYS];
 static size_t count;
 
-void SSD1306_Init(SSD1306* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5])
+void Display_Init(Display* display, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5])
 {
-    *hssd1306 = &devices[count++];
+    *display = &displays[count++];
 
     const struct GPIO_Pin sck_pin = pins[0];
     const struct GPIO_Pin sda_pin = pins[1];
@@ -28,7 +28,7 @@ void SSD1306_Init(SSD1306* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pi
     const struct GPIO_Pin dc_pin  = pins[3];
     const struct GPIO_Pin cs_pin  = pins[4];
 
-    *hssd1306[count - 1] = (struct __SSD1306)
+    displays[count - 1] = (struct __Display)
     {
         .hspi    = hspi,
         .sck_pin = sck_pin,
@@ -81,17 +81,17 @@ void SSD1306_Init(SSD1306* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pi
 
     HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH); // CS = HIGH
 
-    uint8_t display_data[SSD1306_BUFFER_SIZE] = {0};
-    SSD1306_DrawFrame(hssd1306, display_data, SSD1306_BUFFER_SIZE);
+    uint8_t display_data[DISPLAY_BUFFER_SIZE] = {0};
+    Display_DrawFrame(display, display_data, DISPLAY_BUFFER_SIZE);
 }
 
-void SSD1306_DrawFrame(SSD1306* const hssd1306, uint8_t* const buffer, const size_t size)
+void Display_DrawFrame(Display* const display, uint8_t* const buffer, const size_t size)
 {
     uint8_t rx[size];
 
-    SPI_HandleTypeDef* const hspi = (*hssd1306)->hspi;
-    const struct GPIO_Pin cs_pin = (*hssd1306)->cs_pin;
-    const struct GPIO_Pin dc_pin = (*hssd1306)->dc_pin;
+    SPI_HandleTypeDef* const hspi = (*display)->hspi;
+    const struct GPIO_Pin cs_pin  = (*display)->cs_pin;
+    const struct GPIO_Pin dc_pin  = (*display)->dc_pin;
 
     HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
     HAL_GPIO_WritePin(dc_pin.gpio, dc_pin.pin, GPIO_PIN_HIGH);

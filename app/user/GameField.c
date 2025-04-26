@@ -22,7 +22,7 @@ void GameField_Init(GameField* game_field, uint8_t* map, size_t size, size_t wid
 {
     *game_field = &fields[count++];
 
-    *game_field[count - 1] = (struct __GameField)
+    fields[count - 1] = (struct __GameField)
     {
         .map    = map,
         .size   = size,

@@ -2,7 +2,7 @@
 #include <mik32_hal_usart.h>
 #include <xprintf.h>
 #include <inttypes.h>
-#include <SSD1306.h>
+#include <Display.h>
 #include <GameField.h>
 #include <Joystick.h>
 
@@ -34,7 +34,7 @@ static struct GPIO_Pin adc_y_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
 #define PLANE_WIDTH  16
 #define PLANE_HEIGHT 10
 
-static uint8_t    map[SSD1306_BUFFER_SIZE];
+static uint8_t    map[DISPLAY_BUFFER_SIZE];
 static const bool plane_texture[PLANE_WIDTH * PLANE_HEIGHT] =
 {
     false, false, false, false, false, false, false,  true,  true, false, false, false, false, false, false, false,
@@ -56,14 +56,14 @@ int main()
     GPIO_Init();
     ADC_Init();
 
-    SSD1306 display;
-    SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
+    Display display;
+    Display_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
 
-    static const size_t start_x = (SCREEN_WIDTH - PLANE_WIDTH) / 2;
-    static const size_t start_y = (SCREEN_HEIGHT - PLANE_HEIGHT) * 7 / 8;
+    static const size_t start_x = (DISPLAY_WIDTH - PLANE_WIDTH) / 2;
+    static const size_t start_y = (DISPLAY_HEIGHT - PLANE_HEIGHT) * 7 / 8;
 
     GameField game_field;
-    GameField_Init(&game_field, map, SSD1306_BUFFER_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT, (struct Plane)
+    GameField_Init(&game_field, map, DISPLAY_BUFFER_SIZE, DISPLAY_WIDTH, DISPLAY_HEIGHT, (struct Plane)
     {
         .x       = start_x,
         .y       = start_y,
@@ -83,7 +83,7 @@ int main()
         xprintf("dx = %d; dy = %d;\r\n", dx, dy);
 
         GameField_MovePlane(&game_field, dx, dy);
-        SSD1306_DrawFrame(&display, map, SSD1306_BUFFER_SIZE);
+        Display_DrawFrame(&display, map, DISPLAY_BUFFER_SIZE);
     }
 }
 

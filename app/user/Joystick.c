@@ -22,7 +22,7 @@ void Joystick_Init(Joystick* joystick, ADC_HandleTypeDef* hadc, uint8_t channel_
 {
     *joystick = &joysticks[count++];
 
-    *joystick[count - 1] = (struct __Joystick)
+    joysticks[count - 1] = (struct __Joystick)
     {
         .hadc      = hadc,
         .channel_x = channel_x,
