@@ -1,16 +1,30 @@
+#include <mik32_hal_adc.h>
+#include <mik32_hal_usart.h>
+#include <xprintf.h>
+#include <inttypes.h>
 #include <SSD1306.h>
 #include <GameField.h>
 
 static void SystemClock_Config(void);
 static void SPI_Init(void);
+static void USART_Init(void);
 static void GPIO_Init(void);
+static void ADC_Init(void);
 
-static SPI_HandleTypeDef hspi;
+static SPI_HandleTypeDef   hspi;
+static USART_HandleTypeDef husart0;
+static ADC_HandleTypeDef   hadc;
+
+// Пины OLED-дисплея
 static struct GPIO_Pin sck_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_2}; // Пин D6 (SCK, D0)
 static struct GPIO_Pin sda_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_1}; // Пин D5 (MOSI, D1)
 static struct GPIO_Pin res_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_5}; // Пин D0
 static struct GPIO_Pin dc_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_6}; // Пин D1
 static struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пин A2
+
+// Пины джойстика
+static struct GPIO_Pin adc_x_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_7};
+static struct GPIO_Pin adc_y_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
 
 #define PLANE_WIDTH  16
 #define PLANE_HEIGHT 10
@@ -33,7 +47,9 @@ int main()
 {
     SystemClock_Config();
     SPI_Init();
+    USART_Init();
     GPIO_Init();
+    ADC_Init();
 
     SSD1306_HandleTypeDef display;
     SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
@@ -51,52 +67,64 @@ int main()
         .texture = plane_texture
     });
 
+    HAL_ADC_ContinuousEnable(&hadc);
+
+    hadc.Init.Sel = ADC_CHANNEL0;
+    HAL_ADC_ChannelSet(&hadc);
+    const int16_t zero_x = (int16_t)HAL_ADC_GetValue(&hadc); // 2983 (zero) 4095 (left) 213 (right)
+
+    hadc.Init.Sel = ADC_CHANNEL1;
+    HAL_ADC_ChannelSet(&hadc);
+    const int16_t zero_y = (int16_t)HAL_ADC_GetValue(&hadc); // 2907 (zero) 225 (up) 4095 (down)
+
     while (true)
     {
-        GameField_MovePlane(&game_field, 0, 0);
+        hadc.Init.Sel = ADC_CHANNEL0;
+        HAL_ADC_ChannelSet(&hadc);
+        int16_t dx = -(((int16_t)HAL_ADC_GetValue(&hadc) - zero_x) / 128);
+
+        hadc.Init.Sel = ADC_CHANNEL1;
+        HAL_ADC_ChannelSet(&hadc);
+        int16_t dy = (((int16_t)HAL_ADC_GetValue(&hadc) - zero_y) / 128);
+
+        xprintf("dx = %d; dy = %d;\r\n", dx, dy);
+
+        GameField_MovePlane(&game_field, dx, dy);
         SSD1306_DrawFrame(&display, map, SSD1306_BUFFER_SIZE);
     }
 }
 
 static void SystemClock_Config(void)
 {
-    WU->CLOCKS_SYS &=
-        ~(0b11 << WU_CLOCKS_SYS_OSC32M_EN_S); // Включить OSC32M и HSI32M
-    WU->CLOCKS_BU &=
-        ~(0b11 << WU_CLOCKS_BU_OSC32K_EN_S); // Включить OSC32K и LSI32K
+    PCC_InitTypeDef PCC_OscInit =
+    {
+        .OscillatorEnable         = PCC_OSCILLATORTYPE_ALL,
+        .FreqMon.OscillatorSystem = PCC_OSCILLATORTYPE_OSC32M,
+        .FreqMon.ForceOscSys      = PCC_FORCE_OSC_SYS_UNFIXED,
+        .FreqMon.Force32KClk      = PCC_FREQ_MONITOR_SOURCE_OSC32K,
+        .AHBDivider               = 0,
+        .APBMDivider              = 0,
+        .APBPDivider              = 0,
+        .HSI32MCalibrationValue   = 128,
+        .LSI32KCalibrationValue   = 8,
+        .RTCClockSelection        = PCC_RTC_CLOCK_SOURCE_AUTO,
+        .RTCClockCPUSelection     = PCC_CPU_RTC_CLOCK_SOURCE_OSC32K
+    };
 
-    // Поправочный коэффициент HSI32M
-    WU->CLOCKS_SYS = (WU->CLOCKS_SYS & (~WU_CLOCKS_SYS_ADJ_HSI32M_M)) |
-                      WU_CLOCKS_SYS_ADJ_HSI32M(128);
-
-    // Поправочный коэффициент LSI32K
-    WU->CLOCKS_BU = (WU->CLOCKS_BU & (~WU_CLOCKS_BU_ADJ_LSI32K_M)) |
-                     WU_CLOCKS_BU_ADJ_LSI32K(8);
-
-    // Автоматический выбор источника опорного тактирования
-    WU->CLOCKS_SYS &= ~WU_CLOCKS_SYS_FORCE_32K_CLK_M;
-
-    // ожидание готовности
-    while (!(PM->FREQ_STATUS & PM_FREQ_STATUS_OSC32M_M));
-
-    // переключение на тактирование от OSC32M
-    PM->AHB_CLK_MUX = PM_AHB_CLK_MUX_OSC32M_M | PM_AHB_FORCE_MUX_UNFIXED;
-    PM->DIV_AHB = 0;   // Задать делитель шины AHB.
-    PM->DIV_APB_M = 0; // Задать делитель шины APB_M.
-    PM->DIV_APB_P = 0; // Задать делитель шины APB_P.
+    HAL_PCC_Config(&PCC_OscInit);
 }
 
 static void SPI_Init(void)
 {
     SPI_InitTypeDef spi_init =
     {
-        .SPI_Mode = HAL_SPI_MODE_MASTER,
+        .SPI_Mode    = HAL_SPI_MODE_MASTER,
         .BaudRateDiv = SPI_BAUDRATE_DIV64,
-        .ManualCS = SPI_MANUALCS_OFF,
-        .CLKPhase = SPI_PHASE_OFF,
+        .ManualCS    = SPI_MANUALCS_OFF,
+        .CLKPhase    = SPI_PHASE_OFF,
         .CLKPolarity = SPI_POLARITY_LOW,
-        .Decoder = SPI_DECODER_NONE,
-        .ChipSelect = SPI_CS_0
+        .Decoder     = SPI_DECODER_NONE,
+        .ChipSelect  = SPI_CS_0
     };
 
     hspi.Instance = SPI_0;
@@ -106,6 +134,50 @@ static void SPI_Init(void)
     {
         HAL_SPI_Enable(&hspi);
     }
+}
+
+static void USART_Init(void)
+{
+    husart0.Instance = UART_0;
+    husart0.transmitting = Enable;
+    husart0.receiving = Enable;
+    husart0.frame = Frame_8bit;
+    husart0.parity_bit = Disable;
+    husart0.parity_bit_inversion = Disable;
+    husart0.bit_direction = LSB_First;
+    husart0.data_inversion = Disable;
+    husart0.tx_inversion = Disable;
+    husart0.rx_inversion = Disable;
+    husart0.swap = Disable;
+    husart0.lbm = Disable;
+    husart0.stop_bit = StopBit_1;
+    husart0.mode = Asynchronous_Mode;
+    husart0.xck_mode = XCK_Mode3;
+    husart0.last_byte_clock = Disable;
+    husart0.overwrite = Disable;
+    husart0.rts_mode = AlwaysEnable_mode;
+    husart0.dma_tx_request = Disable;
+    husart0.dma_rx_request = Disable;
+    husart0.channel_mode = Duplex_Mode;
+    husart0.tx_break_mode = Disable;
+    husart0.Interrupt.ctsie = Disable;
+    husart0.Interrupt.eie = Disable;
+    husart0.Interrupt.idleie = Disable;
+    husart0.Interrupt.lbdie = Disable;
+    husart0.Interrupt.peie = Disable;
+    husart0.Interrupt.rxneie = Disable;
+    husart0.Interrupt.tcie = Disable;
+    husart0.Interrupt.txeie = Disable;
+    husart0.Modem.rts = Disable; //out
+    husart0.Modem.cts = Disable; //in
+    husart0.Modem.dtr = Disable; //out
+    husart0.Modem.dcd = Disable; //in
+    husart0.Modem.dsr = Disable; //in
+    husart0.Modem.ri = Disable;  //in
+    husart0.Modem.ddis = Disable;//out
+    husart0.baudrate = 115200;
+
+    HAL_USART_Init(&husart0);
 }
 
 static void GPIO_Init(void)
@@ -171,4 +243,35 @@ static void GPIO_Init(void)
     };
 
     HAL_GPIO_Init(cs_pin.gpio, &gpio_cs);
+
+    __HAL_PCC_ANALOG_REGS_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpio_adc_x =
+    {
+        .Pin  = adc_x_pin.pin,
+        .Mode = HAL_GPIO_MODE_ANALOG,
+        .Pull = HAL_GPIO_PULL_NONE,
+        .DS   = HAL_GPIO_DS_2MA
+    };
+
+    HAL_GPIO_Init(adc_x_pin.gpio, &gpio_adc_x);
+
+    GPIO_InitTypeDef gpio_adc_y =
+    {
+        .Pin  = adc_y_pin.pin,
+        .Mode = HAL_GPIO_MODE_ANALOG,
+        .Pull = HAL_GPIO_PULL_NONE,
+        .DS   = HAL_GPIO_DS_2MA
+    };
+
+    HAL_GPIO_Init(adc_y_pin.gpio, &gpio_adc_y);
+}
+
+static void ADC_Init(void)
+{
+    hadc.Instance    = ANALOG_REG;
+    hadc.Init.EXTRef = ADC_EXTREF_OFF;
+    hadc.Init.EXTClb = ADC_EXTCLB_CLBREF;
+
+    HAL_ADC_Init(&hadc);
 }

@@ -16,7 +16,7 @@ string(CONCAT COMMON_FLAGS
     " -march=rv32imc_zicsr_zifencei"
     " -mabi=ilp32"
     " -mcmodel=medlow"
-    " -g3"
+    " -g3 -O1"
     " -Wall"
     " -fsigned-char -ffunction-sections"
     " -DMIK32V2"
@@ -47,7 +47,7 @@ set(CMAKE_ASM_FLAGS_INIT ${ASM_FLAGS})
 # Set linker flags
 string(CONCAT LINK_FLAGS
     " -Wl,-Map,base_project.map"
-    " -Teeprom.ld"
+    " -Tspifi.ld"
     " -Xlinker --gc-sections"
     " -nostartfiles"
 )
