@@ -18,7 +18,7 @@ static size_t count;
 static int16_t __Joystick_ReadRawX(Joystick* joystick);
 static int16_t __Joystick_ReadRawY(Joystick* joystick);
 
-void Joystick_Init(Joystick* joystick, ADC_HandleTypeDef* hadc, uint8_t channel_x, uint8_t channel_y)
+void Joystick_Init(Joystick* const joystick, ADC_HandleTypeDef* const hadc, const uint8_t channel_x, const uint8_t channel_y)
 {
     *joystick = &joysticks[count++];
 
@@ -35,24 +35,24 @@ void Joystick_Init(Joystick* joystick, ADC_HandleTypeDef* hadc, uint8_t channel_
     (*joystick)->zero_y = __Joystick_ReadRawY(joystick); // 2907 (zero)  225 (up)   4095 (down)
 }
 
-int16_t Joystick_ReadX(Joystick* joystick)
+int16_t Joystick_ReadX(Joystick* const joystick)
 {
     return -((__Joystick_ReadRawX(joystick) - (*joystick)->zero_x) / 128);
 }
 
-int16_t Joystick_ReadY(Joystick* joystick)
+int16_t Joystick_ReadY(Joystick* const joystick)
 {
     return (__Joystick_ReadRawY(joystick) - (*joystick)->zero_y) / 128;
 }
 
-static int16_t __Joystick_ReadRawX(Joystick* joystick)
+static int16_t __Joystick_ReadRawX(Joystick* const joystick)
 {
     (*joystick)->hadc->Init.Sel = (*joystick)->channel_x;
     HAL_ADC_ChannelSet((*joystick)->hadc);
     return (int16_t)HAL_ADC_GetValue((*joystick)->hadc);
 }
 
-static int16_t __Joystick_ReadRawY(Joystick* joystick)
+static int16_t __Joystick_ReadRawY(Joystick* const joystick)
 {
     (*joystick)->hadc->Init.Sel = (*joystick)->channel_y;
     HAL_ADC_ChannelSet((*joystick)->hadc);

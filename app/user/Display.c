@@ -5,11 +5,11 @@
 struct __Display
 {
     SPI_HandleTypeDef* hspi;
-    struct GPIO_Pin sck_pin;
-    struct GPIO_Pin sda_pin;
-    struct GPIO_Pin res_pin;
-    struct GPIO_Pin dc_pin;
-    struct GPIO_Pin cs_pin;
+    struct GPIO_Pin    sck_pin;
+    struct GPIO_Pin    sda_pin;
+    struct GPIO_Pin    res_pin;
+    struct GPIO_Pin    dc_pin;
+    struct GPIO_Pin    cs_pin;
 };
 
 #define MAX_DISPLAYS  1
@@ -18,7 +18,7 @@ struct __Display
 static struct __Display displays[MAX_DISPLAYS];
 static size_t count;
 
-void Display_Init(Display* display, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5])
+void Display_Init(Display* const display, SPI_HandleTypeDef* const hspi, struct GPIO_Pin pins[const 5])
 {
     *display = &displays[count++];
 
@@ -39,7 +39,7 @@ void Display_Init(Display* display, SPI_HandleTypeDef* hspi, struct GPIO_Pin pin
     };
 
     // Инициализируем дисплей
-    static uint8_t init_commands[] =
+    static const uint8_t init_commands[] =
     {
         0xAE,       // Display OFF
         0xD5, 0x80, // Set display clock divide (osc freq)
@@ -73,10 +73,10 @@ void Display_Init(Display* display, SPI_HandleTypeDef* hspi, struct GPIO_Pin pin
     {
         HAL_GPIO_WritePin(dc_pin.gpio, dc_pin.pin, GPIO_PIN_LOW); // DC = 0 (команда)
 
-        uint8_t tx_buf[1] = {init_commands[i]};
-        uint8_t rx_buf[1];
+        uint8_t tx_buf = init_commands[i];
+        uint8_t rx_buf;
 
-        HAL_SPI_Exchange(hspi, tx_buf, rx_buf, 1, HAL_MAX_DELAY); // Используем Exchange вместо Transmit
+        HAL_SPI_Exchange(hspi, &tx_buf, &rx_buf, 1, HAL_MAX_DELAY); // Используем Exchange вместо Transmit
     }
 
     HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH); // CS = HIGH
