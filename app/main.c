@@ -56,7 +56,7 @@ int main()
     GPIO_Init();
     ADC_Init();
 
-    SSD1306_HandleTypeDef display;
+    SSD1306 display;
     SSD1306_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
 
     static const size_t start_x = (SCREEN_WIDTH - PLANE_WIDTH) / 2;

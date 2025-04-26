@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-struct __SSD1306_HandleTypeDef
+struct __SSD1306
 {
     SPI_HandleTypeDef* hspi;
     struct GPIO_Pin sck_pin;
@@ -15,10 +15,10 @@ struct __SSD1306_HandleTypeDef
 #define MAX_DISPLAYS  1
 #define HAL_MAX_DELAY 0xFFFFFFFF
 
-static struct __SSD1306_HandleTypeDef devices[MAX_DISPLAYS];
+static struct __SSD1306 devices[MAX_DISPLAYS];
 static size_t count;
 
-void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5])
+void SSD1306_Init(SSD1306* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5])
 {
     *hssd1306 = &devices[count++];
 
@@ -28,7 +28,7 @@ void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, stru
     const struct GPIO_Pin dc_pin  = pins[3];
     const struct GPIO_Pin cs_pin  = pins[4];
 
-    *hssd1306[count - 1] = (struct __SSD1306_HandleTypeDef)
+    *hssd1306[count - 1] = (struct __SSD1306)
     {
         hspi,
         sck_pin,
@@ -85,7 +85,7 @@ void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, stru
     SSD1306_DrawFrame(hssd1306, display_data, SSD1306_BUFFER_SIZE);
 }
 
-void SSD1306_DrawFrame(SSD1306_HandleTypeDef* const hssd1306, uint8_t* const buffer, const size_t size)
+void SSD1306_DrawFrame(SSD1306* const hssd1306, uint8_t* const buffer, const size_t size)
 {
     uint8_t rx[size];
 

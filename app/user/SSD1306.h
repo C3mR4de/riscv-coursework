@@ -10,10 +10,10 @@
 #define SCREEN_HEIGHT 64
 #define SSD1306_BUFFER_SIZE ((SCREEN_WIDTH * SCREEN_HEIGHT) / 8)
 
-struct __SSD1306_HandleTypeDef;
-typedef struct __SSD1306_HandleTypeDef* SSD1306_HandleTypeDef;
+struct __SSD1306;
+typedef struct __SSD1306* SSD1306;
 
-void SSD1306_Init(SSD1306_HandleTypeDef* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5]);
-void SSD1306_DrawFrame(SSD1306_HandleTypeDef* hssd1306, uint8_t* buffer, size_t size);
+void SSD1306_Init(SSD1306* hssd1306, SPI_HandleTypeDef* hspi, struct GPIO_Pin pins[5]);
+void SSD1306_DrawFrame(SSD1306* hssd1306, uint8_t* buffer, size_t size);
 
 #endif
