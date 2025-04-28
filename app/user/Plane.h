@@ -7,8 +7,8 @@
 
 struct Plane
 {
-    size_t      x;
-    size_t      y;
+    ptrdiff_t   x;
+    ptrdiff_t   y;
     size_t      width;
     size_t      height;
     const bool* texture;

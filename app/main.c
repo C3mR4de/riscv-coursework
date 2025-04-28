@@ -1,5 +1,6 @@
 #include <mik32_hal_adc.h>
 #include <mik32_hal_usart.h>
+#include <mik32_hal_irq.h>
 #include <xprintf.h>
 #include <inttypes.h>
 #include <Display.h>
@@ -11,6 +12,8 @@ static void SPI_Init(void);
 static void USART_Init(void);
 static void GPIO_Init(void);
 static void ADC_Init(void);
+// static void Shoot_TrapHandler_Raw(void) __attribute__((interrupt("machine"), section(".text.trap_handler")));
+// void Shoot_TrapHandler(void) __attribute__((weak));
 
 static SPI_HandleTypeDef   hspi;
 static USART_HandleTypeDef husart0;
@@ -26,6 +29,7 @@ static const struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; //
 // Пины джойстика
 static const struct GPIO_Pin adc_x_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_7};
 static const struct GPIO_Pin adc_y_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
+static const struct GPIO_Pin sw_pin    = (struct GPIO_Pin){GPIO_1, GPIO_PIN_2};
 
 // Каналы джойстика
 #define JOYSTICK_CHANNEL_X ADC_CHANNEL0
@@ -48,6 +52,8 @@ static const bool plane_texture[PLANE_WIDTH * PLANE_HEIGHT] =
      true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true,
 };
 
+static GameField game_field;
+
 int main()
 {
     SystemClock_Config();
@@ -62,7 +68,6 @@ int main()
     static const size_t start_x = (DISPLAY_WIDTH - PLANE_WIDTH) / 2;
     static const size_t start_y = (DISPLAY_HEIGHT - PLANE_HEIGHT) * 7 / 8;
 
-    GameField game_field;
     GameField_Init(&game_field, map, DISPLAY_BUFFER_SIZE, DISPLAY_WIDTH, DISPLAY_HEIGHT, (struct Plane)
     {
         .x       = start_x,
@@ -83,6 +88,7 @@ int main()
         xprintf("dx = %d; dy = %d;\r\n", dx, dy);
 
         GameField_MovePlane(&game_field, dx, dy);
+        GameField_MoveAsteroids(&game_field);
         Display_DrawFrame(&display, map, DISPLAY_BUFFER_SIZE);
     }
 }
@@ -175,17 +181,12 @@ static void USART_Init(void)
 
 static void GPIO_Init(void)
 {
-    /**< Включить  тактирование GPIO_0 */
-    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_0_M;
-
-    /**< Включить  тактирование GPIO_1 */
-    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_1_M;
-
-    /**< Включить  тактирование GPIO_2 */
-    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_2_M;
-
-    /**< Включить  тактирование схемы формирования прерываний GPIO */
-    PM->CLK_APB_P_SET = PM_CLOCK_APB_P_GPIO_IRQ_M;
+    __HAL_PCC_GPIO_0_CLK_ENABLE();
+    __HAL_PCC_GPIO_1_CLK_ENABLE();
+    __HAL_PCC_GPIO_2_CLK_ENABLE();
+    __HAL_PCC_GPIO_IRQ_CLK_ENABLE();
+    __HAL_PCC_ANALOG_REGS_CLK_ENABLE();
+    // __HAL_PCC_EPIC_CLK_ENABLE();
 
     GPIO_InitTypeDef gpio_sck =
     {
@@ -237,8 +238,6 @@ static void GPIO_Init(void)
 
     HAL_GPIO_Init(cs_pin.gpio, &gpio_cs);
 
-    __HAL_PCC_ANALOG_REGS_CLK_ENABLE();
-
     GPIO_InitTypeDef gpio_adc_x =
     {
         .Pin  = adc_x_pin.pin,
@@ -258,6 +257,21 @@ static void GPIO_Init(void)
     };
 
     HAL_GPIO_Init(adc_y_pin.gpio, &gpio_adc_y);
+
+    GPIO_InitTypeDef gpio_sw =
+    {
+        .Pin  = sw_pin.pin,
+        .Mode = HAL_GPIO_MODE_GPIO_INPUT,
+        .Pull = HAL_GPIO_PULL_NONE,
+        .DS   = HAL_GPIO_DS_2MA
+    };
+
+    HAL_GPIO_Init(sw_pin.gpio, &gpio_sw);
+
+    HAL_EPIC_MaskEdgeSet(HAL_EPIC_GPIO_IRQ_MASK);
+    HAL_GPIO_InitInterruptLine(GPIO_MUX_LINE_2_PORT1_2, GPIO_INT_MODE_RISING);
+
+    HAL_IRQ_EnableInterrupts();
 }
 
 static void ADC_Init(void)
@@ -268,3 +282,16 @@ static void ADC_Init(void)
 
     HAL_ADC_Init(&hadc);
 }
+
+// static void Shoot_TrapHandler_Raw(void)
+// {
+//     Shoot_TrapHandler();
+// }
+
+// void Shoot_TrapHandler(void)
+// {
+//     if (EPIC_CHECK_GPIO_IRQ())
+//     {
+//         GameField_Shoot(&game_field);
+//     }
+// }
