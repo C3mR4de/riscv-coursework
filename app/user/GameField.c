@@ -88,7 +88,7 @@ void GameField_MoveAsteroids(GameField* const game_field)
     }
 }
 
-void GameField_Shoot(GameField* game_field)
+void GameField_Shoot(GameField* const game_field)
 {
     for (size_t i = 0; i < MAX_BULLETS; ++i)
     {
@@ -101,7 +101,7 @@ void GameField_Shoot(GameField* game_field)
     }
 }
 
-void GameField_MoveBullets(GameField* game_field)
+void GameField_MoveBullets(GameField* const game_field)
 {
     for (size_t i = 0; i < MAX_BULLETS; ++i)
     {

@@ -4,17 +4,16 @@
 #include <Display.h>
 #include <GameField.h>
 #include <Joystick.h>
+#include <string.h>
 
 static void SystemClock_Config(void);
 static void SPI_Init(void);
 static void GPIO_Init(void);
 static void ADC_Init(void);
 static void Interrupts_Init(void);
-static void Shoot_TrapHandler_Raw(void) __attribute__((interrupt("machine"), section(".trap_text")));
-void Shoot_TrapHandler(void) __attribute__((weak));
 
-static SPI_HandleTypeDef   hspi;
-static ADC_HandleTypeDef   hadc;
+static SPI_HandleTypeDef hspi;
+static ADC_HandleTypeDef hadc;
 
 // Пины OLED-дисплея
 static const struct GPIO_Pin sck_pin = (struct GPIO_Pin){GPIO_0, GPIO_PIN_2}; // Пин D6 (SCK, D0)
@@ -135,7 +134,6 @@ static void GPIO_Init(void)
     __HAL_PCC_GPIO_0_CLK_ENABLE();
     __HAL_PCC_GPIO_1_CLK_ENABLE();
     __HAL_PCC_GPIO_2_CLK_ENABLE();
-    __HAL_PCC_GPIO_IRQ_CLK_ENABLE();
     __HAL_PCC_ANALOG_REGS_CLK_ENABLE();
 
     GPIO_InitTypeDef gpio_sck =
@@ -230,32 +228,31 @@ static void ADC_Init(void)
 
 static void Interrupts_Init(void)
 {
-    (void)Shoot_TrapHandler_Raw;
-    __HAL_PCC_EPIC_CLK_ENABLE();
+    HAL_IRQ_DisableInterrupts();
 
-    HAL_EPIC_MaskLevelSet(HAL_EPIC_GPIO_IRQ_MASK);
-    HAL_GPIO_InitInterruptLine(GPIO_MUX_LINE_2_PORT1_2, GPIO_INT_MODE_RISING);
+    // __HAL_PCC_EPIC_CLK_ENABLE();
+    __HAL_PCC_GPIO_IRQ_CLK_ENABLE();
+
+    HAL_EPIC_MaskEdgeSet(HAL_EPIC_GPIO_IRQ_MASK);
+    HAL_GPIO_InitInterruptLine(GPIO_MUX_LINE_6_PORT1_2, GPIO_INT_MODE_RISING);
 
     HAL_IRQ_EnableInterrupts();
 }
 
-void Shoot_TrapHandler_Raw(void)
+void trap_handler(void)
 {
-    Shoot_TrapHandler();
-}
+    uint8_t buffer[DISPLAY_BUFFER_SIZE];
+    memset(buffer, 0xFF, DISPLAY_BUFFER_SIZE);
+    uint8_t rx[DISPLAY_BUFFER_SIZE];
 
-void Shoot_TrapHandler(void)
-{
-    uint32_t mcause = read_csr(mcause);
+    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
+    HAL_GPIO_WritePin(dc_pin.gpio, dc_pin.pin, GPIO_PIN_HIGH);
+    HAL_SPI_Exchange(&hspi, buffer, rx, DISPLAY_BUFFER_SIZE, 0xFFFFFFFF);
+    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH);
 
-    if ((mcause & MCAUSE_INT) != 0)
+    if (EPIC_CHECK_GPIO_IRQ() && HAL_GPIO_LineInterruptState(GPIO_LINE_6))
     {
-        mcause &= 0xFF;
-
-        if (EPIC_CHECK_GPIO_IRQ())
-        {
-            GameField_Shoot(&game_field);
-            HAL_EPIC_Clear(HAL_EPIC_GPIO_IRQ_MASK);
-        }
+        GameField_Shoot(&game_field);
+        HAL_EPIC_Clear(HAL_EPIC_GPIO_IRQ_MASK);
     }
 }
