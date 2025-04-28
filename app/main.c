@@ -6,14 +6,15 @@
 #include <Display.h>
 #include <GameField.h>
 #include <Joystick.h>
+#include <RISCVIrq.h>
 
 static void SystemClock_Config(void);
 static void SPI_Init(void);
 static void USART_Init(void);
 static void GPIO_Init(void);
 static void ADC_Init(void);
-// static void Shoot_TrapHandler_Raw(void) __attribute__((interrupt("machine"), section(".text.trap_handler")));
-// void Shoot_TrapHandler(void) __attribute__((weak));
+static void Interrupts_Init(void);
+static void Shoot_TrapHandler(void);
 
 static SPI_HandleTypeDef   hspi;
 static USART_HandleTypeDef husart0;
@@ -61,6 +62,7 @@ int main()
     USART_Init();
     GPIO_Init();
     ADC_Init();
+    Interrupts_Init();
 
     Display display;
     Display_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
@@ -267,11 +269,6 @@ static void GPIO_Init(void)
     };
 
     HAL_GPIO_Init(sw_pin.gpio, &gpio_sw);
-
-    HAL_EPIC_MaskEdgeSet(HAL_EPIC_GPIO_IRQ_MASK);
-    HAL_GPIO_InitInterruptLine(GPIO_MUX_LINE_2_PORT1_2, GPIO_INT_MODE_RISING);
-
-    HAL_IRQ_EnableInterrupts();
 }
 
 static void ADC_Init(void)
@@ -283,15 +280,22 @@ static void ADC_Init(void)
     HAL_ADC_Init(&hadc);
 }
 
-// static void Shoot_TrapHandler_Raw(void)
-// {
-//     Shoot_TrapHandler();
-// }
+static void Interrupts_Init(void)
+{
+    HAL_EPIC_MaskEdgeSet(HAL_EPIC_GPIO_IRQ_MASK);
+    HAL_GPIO_InitInterruptLine(GPIO_MUX_LINE_2_PORT1_2, GPIO_INT_MODE_RISING);
 
-// void Shoot_TrapHandler(void)
-// {
-//     if (EPIC_CHECK_GPIO_IRQ())
-//     {
-//         GameField_Shoot(&game_field);
-//     }
-// }
+    HAL_IRQ_EnableInterrupts();
+
+    RISCV_IRQ_SetHandler(RISCV_IRQ_MEI, Shoot_TrapHandler);
+    RISCV_IRQ_Enable(RISCV_IRQ_MEI);
+    RISCV_IRQ_GlobalEnable();
+}
+
+void Shoot_TrapHandler(void)
+{
+    if (EPIC_CHECK_GPIO_IRQ())
+    {
+        GameField_Shoot(&game_field);
+    }
+}
