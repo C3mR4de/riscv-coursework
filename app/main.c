@@ -21,13 +21,14 @@ static const struct GPIO_Pin dc_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_6}; //
 static const struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; // Пин A2
 
 // Пины джойстика
-static const struct GPIO_Pin adc_x_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_7};
-static const struct GPIO_Pin adc_y_pin = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
-static const struct GPIO_Pin sw_pin    = (struct GPIO_Pin){GPIO_1, GPIO_PIN_2};
+static const struct GPIO_Pin adc_x_pin  = (struct GPIO_Pin){GPIO_1, GPIO_PIN_7};
+static const struct GPIO_Pin adc_y_pin  = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
+static const struct GPIO_Pin sw_pin     = (struct GPIO_Pin){GPIO_0, GPIO_PIN_7};
 
 // Каналы джойстика
-#define JOYSTICK_CHANNEL_X ADC_CHANNEL0
-#define JOYSTICK_CHANNEL_Y ADC_CHANNEL1
+#define JOYSTICK_CHANNEL_X  ADC_CHANNEL0
+#define JOYSTICK_CHANNEL_Y  ADC_CHANNEL1
+#define JOYSTICK_CHANNEL_SW ADC_CHANNEL3
 
 #define PLANE_WIDTH  16
 #define PLANE_HEIGHT 10
@@ -46,8 +47,6 @@ static const bool plane_texture[PLANE_WIDTH * PLANE_HEIGHT] =
      true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true,
 };
 
-static GameField game_field;
-
 int main()
 {
     SystemClock_Config();
@@ -55,12 +54,13 @@ int main()
     GPIO_Init();
     ADC_Init();
 
-    Display display;
+    static Display display;
     Display_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
 
     static const size_t start_x = (DISPLAY_WIDTH - PLANE_WIDTH) / 2;
     static const size_t start_y = (DISPLAY_HEIGHT - PLANE_HEIGHT) * 7 / 8;
 
+    static GameField game_field;
     GameField_Init(&game_field, map, DISPLAY_BUFFER_SIZE, DISPLAY_WIDTH, DISPLAY_HEIGHT, (struct Plane)
     {
         .x       = start_x,
@@ -70,8 +70,8 @@ int main()
         .texture = plane_texture
     });
 
-    Joystick joystick;
-    Joystick_Init(&joystick, &hadc, JOYSTICK_CHANNEL_X, JOYSTICK_CHANNEL_Y, sw_pin);
+    static Joystick joystick;
+    Joystick_Init(&joystick, &hadc, JOYSTICK_CHANNEL_X, JOYSTICK_CHANNEL_Y, JOYSTICK_CHANNEL_SW);
 
     while (true)
     {
@@ -209,8 +209,8 @@ static void GPIO_Init(void)
     GPIO_InitTypeDef gpio_sw =
     {
         .Pin  = sw_pin.pin,
-        .Mode = HAL_GPIO_MODE_GPIO_INPUT,
-        .Pull = HAL_GPIO_PULL_UP,
+        .Mode = HAL_GPIO_MODE_ANALOG,
+        .Pull = HAL_GPIO_PULL_NONE,
         .DS   = HAL_GPIO_DS_2MA
     };
 
