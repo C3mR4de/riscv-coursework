@@ -75,7 +75,7 @@ int main()
     {
         const int16_t dx   = Joystick_ReadX(&joystick);
         const int16_t dy   = Joystick_ReadY(&joystick);
-        const bool    shot =1; // Joystick_ReadSw(&joystick);
+        const bool    shot = true; // Joystick_ReadSw(&joystick);
 
         GameField_MoveAsteroids(&game_field);
         GameField_MovePlane(&game_field, dx, dy);
