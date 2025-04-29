@@ -77,7 +77,7 @@ int main()
     {
         const int16_t dx   = Joystick_ReadX(&joystick);
         const int16_t dy   = Joystick_ReadY(&joystick);
-        const bool    shot = Joystick_ReadSw(&joystick);
+        const bool    shot = true;
 
         GameField_MoveAsteroids(&game_field);
         GameField_MovePlane(&game_field, dx, dy);
@@ -210,7 +210,7 @@ static void GPIO_Init(void)
     {
         .Pin  = sw_pin.pin,
         .Mode = HAL_GPIO_MODE_ANALOG,
-        .Pull = HAL_GPIO_PULL_NONE,
+        .Pull = HAL_GPIO_PULL_DOWN,
         .DS   = HAL_GPIO_DS_2MA
     };
 

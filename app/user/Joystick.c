@@ -50,7 +50,8 @@ int16_t Joystick_ReadY(Joystick* const joystick)
 
 bool Joystick_ReadSw(Joystick* const joystick)
 {
-    return __Joystick_ReadRawSw(joystick) > 800;
+    uint16_t raw_sw = __Joystick_ReadRawSw(joystick);
+    return raw_sw > 500;
 }
 
 static int16_t __Joystick_ReadRawX(Joystick* const joystick)
