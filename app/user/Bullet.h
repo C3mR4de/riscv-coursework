@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#define BULLET_WIDTH 2
+#define BULLET_WIDTH  2
 #define BULLET_HEIGHT 6
 
 struct Bullet
