@@ -23,7 +23,7 @@ static const struct GPIO_Pin cs_pin  = (struct GPIO_Pin){GPIO_0, GPIO_PIN_4}; //
 // Пины джойстика
 static const struct GPIO_Pin adc_x_pin  = (struct GPIO_Pin){GPIO_1, GPIO_PIN_7};
 static const struct GPIO_Pin adc_y_pin  = (struct GPIO_Pin){GPIO_1, GPIO_PIN_5};
-static const struct GPIO_Pin sw_pin     = (struct GPIO_Pin){GPIO_0, GPIO_PIN_7};
+static const struct GPIO_Pin sw_pin     = (struct GPIO_Pin){GPIO_1, GPIO_PIN_8};
 
 // Каналы джойстика
 #define JOYSTICK_CHANNEL_X  ADC_CHANNEL0
@@ -77,7 +77,7 @@ int main()
     {
         const int16_t dx   = Joystick_ReadX(&joystick);
         const int16_t dy   = Joystick_ReadY(&joystick);
-        const bool    shot = Joystick_ReadSw(&joystick);
+        const bool    shot = true; // Joystick_ReadSw(&joystick);
 
         GameField_MoveAsteroids(&game_field);
         GameField_MovePlane(&game_field, dx, dy);
@@ -210,7 +210,7 @@ static void GPIO_Init(void)
     {
         .Pin  = sw_pin.pin,
         .Mode = HAL_GPIO_MODE_GPIO_INPUT,
-        .Pull = HAL_GPIO_PULL_DOWN,
+        .Pull = HAL_GPIO_PULL_NONE,
         .DS   = HAL_GPIO_DS_2MA
     };
 
