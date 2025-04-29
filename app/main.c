@@ -61,13 +61,11 @@ int main()
     static const size_t start_y = (DISPLAY_HEIGHT - PLANE_HEIGHT) * 7 / 8;
 
     static GameField game_field;
-    GameField_Init(&game_field, map, DISPLAY_BUFFER_SIZE, DISPLAY_WIDTH, DISPLAY_HEIGHT, (struct Plane)
+    GameField_Init(&game_field, map, DISPLAY_BUFFER_SIZE, (struct Vector2uz){DISPLAY_WIDTH, DISPLAY_HEIGHT}, (struct Plane)
     {
-        .x       = start_x,
-        .y       = start_y,
-        .width   = PLANE_WIDTH,
-        .height  = PLANE_HEIGHT,
-        .texture = plane_texture
+        .position = (struct Vector2z){start_x, start_y},
+        .rect     = (struct Vector2uz){PLANE_WIDTH, PLANE_HEIGHT},
+        .texture  = plane_texture
     });
 
     static Joystick joystick;

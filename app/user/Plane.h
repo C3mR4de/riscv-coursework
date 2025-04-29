@@ -4,14 +4,13 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "Vector2.h"
 
 struct Plane
 {
-    ptrdiff_t   x;
-    ptrdiff_t   y;
-    size_t      width;
-    size_t      height;
-    const bool* texture;
+    struct Vector2z  position;
+    struct Vector2uz rect;
+    const bool*      texture;
 };
 
 #endif
