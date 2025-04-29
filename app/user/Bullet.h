@@ -8,8 +8,7 @@
 
 struct Bullet
 {
-    ptrdiff_t x;
-    ptrdiff_t y;
+    struct Vector2z position;
     bool is_active;
 };
 

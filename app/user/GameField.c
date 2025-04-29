@@ -92,9 +92,9 @@ void GameField_MoveBullets(GameField* const game_field, const bool shot)
         {
             __GameField_ClearBullet(game_field, i);
 
-            (*game_field)->bullets[i].y -= 4;
+            (*game_field)->bullets[i].position.y -= 4;
 
-            if ((*game_field)->bullets[i].y + BULLET_HEIGHT < 0)
+            if ((*game_field)->bullets[i].position.y + BULLET_HEIGHT < 0)
             {
                 (*game_field)->bullets[i].is_active = false;
             }
@@ -109,8 +109,8 @@ void GameField_MoveBullets(GameField* const game_field, const bool shot)
         {
             if (!(*game_field)->bullets[i].is_active)
             {
-                (*game_field)->bullets[i].x = (*game_field)->plane.position.x + (*game_field)->plane.rect.x / 2 - BULLET_WIDTH / 2;
-                (*game_field)->bullets[i].y = (*game_field)->plane.position.y;
+                (*game_field)->bullets[i].position.x = (*game_field)->plane.position.x + (*game_field)->plane.rect.x / 2 - BULLET_WIDTH / 2;
+                (*game_field)->bullets[i].position.y = (*game_field)->plane.position.y;
                 (*game_field)->bullets[i].is_active = true;
 
                 break;
@@ -224,8 +224,8 @@ static void __GameField_SetBullet(GameField* const game_field, const size_t inde
     {
         for (size_t j = 0; j < BULLET_WIDTH; ++j)
         {
-            const size_t x = (*game_field)->bullets[index].x + j;
-            const size_t y = (*game_field)->bullets[index].y + i;
+            const size_t x = (*game_field)->bullets[index].position.x + j;
+            const size_t y = (*game_field)->bullets[index].position.y + i;
 
             __GameField_SetPixel(game_field, x, y, enable);
         }
@@ -261,6 +261,6 @@ static bool __GameField_Collides(const struct Plane plane, const struct Asteroid
 
 static bool __GameField_IsShot(const struct Asteroid asteroid, const struct Bullet bullet)
 {
-    return asteroid.position.x + ASTEROID_WIDTH  > bullet.x && bullet.x + BULLET_WIDTH  > asteroid.position.x
-        && asteroid.position.y + ASTEROID_HEIGHT > bullet.y && bullet.y + BULLET_HEIGHT > asteroid.position.y;
+    return asteroid.position.x + ASTEROID_WIDTH  > bullet.position.x && bullet.position.x + BULLET_WIDTH  > asteroid.position.x
+        && asteroid.position.y + ASTEROID_HEIGHT > bullet.position.y && bullet.position.y + BULLET_HEIGHT > asteroid.position.y;
 }
