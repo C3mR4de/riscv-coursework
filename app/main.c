@@ -210,7 +210,7 @@ static void GPIO_Init(void)
     {
         .Pin  = sw_pin.pin,
         .Mode = HAL_GPIO_MODE_GPIO_INPUT,
-        .Pull = HAL_GPIO_PULL_NONE,
+        .Pull = HAL_GPIO_PULL_UP,
         .DS   = HAL_GPIO_DS_2MA
     };
 
