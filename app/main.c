@@ -1,5 +1,4 @@
 #include <mik32_hal_adc.h>
-#include <mik32_hal_irq.h>
 #include <inttypes.h>
 #include <Display.h>
 #include <GameField.h>
@@ -10,7 +9,6 @@ static void SystemClock_Config(void);
 static void SPI_Init(void);
 static void GPIO_Init(void);
 static void ADC_Init(void);
-static void Interrupts_Init(void);
 
 static SPI_HandleTypeDef hspi;
 static ADC_HandleTypeDef hadc;
@@ -56,7 +54,6 @@ int main()
     SPI_Init();
     GPIO_Init();
     ADC_Init();
-    Interrupts_Init();
 
     Display display;
     Display_Init(&display, &hspi, (struct GPIO_Pin[5]){sck_pin, sda_pin, res_pin, dc_pin, cs_pin});
@@ -74,15 +71,18 @@ int main()
     });
 
     Joystick joystick;
-    Joystick_Init(&joystick, &hadc, JOYSTICK_CHANNEL_X, JOYSTICK_CHANNEL_Y);
+    Joystick_Init(&joystick, &hadc, JOYSTICK_CHANNEL_X, JOYSTICK_CHANNEL_Y, sw_pin);
 
     while (true)
     {
-        const int16_t dx = Joystick_ReadX(&joystick);
-        const int16_t dy = Joystick_ReadY(&joystick);
+        const int16_t dx   = Joystick_ReadX(&joystick);
+        const int16_t dy   = Joystick_ReadY(&joystick);
+        const bool    shot = Joystick_ReadSw(&joystick);
 
-        GameField_MovePlane(&game_field, dx, dy);
         GameField_MoveAsteroids(&game_field);
+        GameField_MovePlane(&game_field, dx, dy);
+        GameField_MoveBullets(&game_field, shot);
+        GameField_CheckCollisions(&game_field);
         Display_DrawFrame(&display, map, DISPLAY_BUFFER_SIZE);
     }
 }
@@ -224,35 +224,4 @@ static void ADC_Init(void)
     hadc.Init.EXTClb = ADC_EXTCLB_CLBREF;
 
     HAL_ADC_Init(&hadc);
-}
-
-static void Interrupts_Init(void)
-{
-    HAL_IRQ_DisableInterrupts();
-
-    // __HAL_PCC_EPIC_CLK_ENABLE();
-    __HAL_PCC_GPIO_IRQ_CLK_ENABLE();
-
-    HAL_EPIC_MaskEdgeSet(HAL_EPIC_GPIO_IRQ_MASK);
-    HAL_GPIO_InitInterruptLine(GPIO_MUX_LINE_6_PORT1_2, GPIO_INT_MODE_RISING);
-
-    HAL_IRQ_EnableInterrupts();
-}
-
-void trap_handler(void)
-{
-    uint8_t buffer[DISPLAY_BUFFER_SIZE];
-    memset(buffer, 0xFF, DISPLAY_BUFFER_SIZE);
-    uint8_t rx[DISPLAY_BUFFER_SIZE];
-
-    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_LOW);
-    HAL_GPIO_WritePin(dc_pin.gpio, dc_pin.pin, GPIO_PIN_HIGH);
-    HAL_SPI_Exchange(&hspi, buffer, rx, DISPLAY_BUFFER_SIZE, 0xFFFFFFFF);
-    HAL_GPIO_WritePin(cs_pin.gpio, cs_pin.pin, GPIO_PIN_HIGH);
-
-    if (EPIC_CHECK_GPIO_IRQ() && HAL_GPIO_LineInterruptState(GPIO_LINE_6))
-    {
-        GameField_Shoot(&game_field);
-        HAL_EPIC_Clear(HAL_EPIC_GPIO_IRQ_MASK);
-    }
 }
