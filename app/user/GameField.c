@@ -73,9 +73,9 @@ void GameField_MoveAsteroids(GameField* const game_field)
     {
         __GameField_ClearAsteroid(game_field, i);
 
-        ++(*game_field)->asteroids[i].y;
+        ++(*game_field)->asteroids[i].position.y;
 
-        if ((*game_field)->asteroids[i].y > (ptrdiff_t)(*game_field)->rect.y)
+        if ((*game_field)->asteroids[i].position.y > (ptrdiff_t)(*game_field)->rect.y)
         {
             __GameField_RespawnAsteroid(game_field, i);
         }
@@ -195,8 +195,8 @@ static void __GameField_ClearAsteroid(GameField* const game_field, const size_t 
     {
         for (size_t j = 0; j < ASTEROID_WIDTH; ++j)
         {
-            const size_t x = (*game_field)->asteroids[index].x + j;
-            const size_t y = (*game_field)->asteroids[index].y + i;
+            const size_t x = (*game_field)->asteroids[index].position.x + j;
+            const size_t y = (*game_field)->asteroids[index].position.y + i;
 
             __GameField_SetPixel(game_field, x, y, false);
         }
@@ -209,8 +209,8 @@ static void __GameField_FillAsteroid(GameField* const game_field, const size_t i
     {
         for (size_t j = 0; j < ASTEROID_WIDTH; ++j)
         {
-            const size_t x     = (*game_field)->asteroids[index].x + j;
-            const size_t y     = (*game_field)->asteroids[index].y + i;
+            const size_t x     = (*game_field)->asteroids[index].position.x + j;
+            const size_t y     = (*game_field)->asteroids[index].position.y + i;
             const bool   state = asteroid_texture[i * ASTEROID_WIDTH + j];
 
             __GameField_SetPixel(game_field, x, y, state);
@@ -244,8 +244,8 @@ static void __GameField_FillBullet(GameField* const game_field, const size_t ind
 
 static void __GameField_RespawnAsteroid(GameField* const game_field, const size_t index)
 {
-    (*game_field)->asteroids[index].x = rand() % ((*game_field)->rect.x - ASTEROID_WIDTH);
-    (*game_field)->asteroids[index].y = rand() % ((*game_field)->rect.y - ASTEROID_HEIGHT) - (*game_field)->rect.y;
+    (*game_field)->asteroids[index].position.x = rand() % ((*game_field)->rect.x - ASTEROID_WIDTH);
+    (*game_field)->asteroids[index].position.y = rand() % ((*game_field)->rect.y - ASTEROID_HEIGHT) - (*game_field)->rect.y;
 }
 
 static size_t __GameField_Clamp(const ptrdiff_t value, const ptrdiff_t low, const ptrdiff_t high)
@@ -255,12 +255,12 @@ static size_t __GameField_Clamp(const ptrdiff_t value, const ptrdiff_t low, cons
 
 static bool __GameField_Collides(const struct Plane plane, const struct Asteroid asteroid)
 {
-    return plane.position.x + (ptrdiff_t)plane.rect.x > asteroid.x && asteroid.x + ASTEROID_WIDTH  > plane.position.x
-        && plane.position.y + (ptrdiff_t)plane.rect.y > asteroid.y && asteroid.y + ASTEROID_HEIGHT > plane.position.y;
+    return plane.position.x + (ptrdiff_t)plane.rect.x > asteroid.position.x && asteroid.position.x + ASTEROID_WIDTH  > plane.position.x
+        && plane.position.y + (ptrdiff_t)plane.rect.y > asteroid.position.y && asteroid.position.y + ASTEROID_HEIGHT > plane.position.y;
 }
 
 static bool __GameField_IsShot(const struct Asteroid asteroid, const struct Bullet bullet)
 {
-    return asteroid.x + ASTEROID_WIDTH  > bullet.x && bullet.x + BULLET_WIDTH  > asteroid.x
-        && asteroid.y + ASTEROID_HEIGHT > bullet.y && bullet.y + BULLET_HEIGHT > asteroid.y;
+    return asteroid.position.x + ASTEROID_WIDTH  > bullet.x && bullet.x + BULLET_WIDTH  > asteroid.position.x
+        && asteroid.position.y + ASTEROID_HEIGHT > bullet.y && bullet.y + BULLET_HEIGHT > asteroid.position.y;
 }
