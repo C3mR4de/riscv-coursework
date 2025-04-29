@@ -36,15 +36,15 @@ static const struct GPIO_Pin sw_pin     = (struct GPIO_Pin){GPIO_1, GPIO_PIN_8};
 static uint8_t    map[DISPLAY_BUFFER_SIZE];
 static const bool plane_texture[PLANE_WIDTH * PLANE_HEIGHT] =
 {
-    false, false, false, false, false, false, false,  true,  true, false, false, false, false, false, false, false,
-    false, false, false, false, false, false,  true,  true,  true,  true, false, false, false, false, false, false,
-    false, false, false, false, false,  true,  true,  true,  true,  true,  true, false, false, false, false, false,
-    false, false, false,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true, false, false, false,
-    false,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true, false,
-     true,  true,  true,  true,  true,  true, false,  true,  true, false,  true,  true,  true,  true,  true,  true,
-     true,  true,  true, false, false, false, false,  true,  true, false, false, false, false,  true,  true,  true,
-     true,  true, false, false, false, false, false,  true,  true, false, false, false, false, false,  true,  true,
-     true, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true,
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+    1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1,
+    1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1,
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
 };
 
 int main()
@@ -75,7 +75,7 @@ int main()
     {
         const int16_t dx   = Joystick_ReadX(&joystick);
         const int16_t dy   = Joystick_ReadY(&joystick);
-        const bool    shot = true; // Joystick_ReadSw(&joystick);
+        const bool    shot =1; // Joystick_ReadSw(&joystick);
 
         GameField_MoveAsteroids(&game_field);
         GameField_MovePlane(&game_field, dx, dy);

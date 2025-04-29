@@ -9,12 +9,12 @@
 
 static const bool asteroid_texture[ASTEROID_WIDTH * ASTEROID_HEIGHT] =
 {
-    false,  true,  true,  true, false, false,
-    false,  true, false, false,  true, false,
-     true, false,  true, false, false,  true,
-     true, true, false,  true,  true,  true,
-     true,  true,  true,  true,  true,  true,
-    false,  true,  true,  true,  true, false,
+    0, 1, 1, 1, 0, 0,
+    0, 1, 0, 0, 1, 0,
+    1, 0, 1, 0, 0, 1,
+    1, 1, 0, 1, 1, 1,
+    1, 1, 1, 1, 1, 1,
+    0, 1, 1, 1, 1, 0
 };
 
 
