@@ -32,8 +32,9 @@ static void   __GameField_ClearBullet(GameField* const game_field, const size_t 
 static void   __GameField_FillBullet(GameField* const game_field, const size_t index);
 static void   __GameField_RespawnAsteroid(GameField* game_field, size_t index);
 static size_t __GameField_Clamp(ptrdiff_t value, ptrdiff_t low, ptrdiff_t high);
-static bool   __GameField_Collides(struct Plane plane, struct Asteroid asteroid);
-static bool   __GameField_IsShot(struct Asteroid asteroid, struct Bullet bullet);
+static bool   __GameField_Intersects(struct Vector2z lhs_position, struct Vector2uz lhs_rect, struct Vector2z rhs_position, struct Vector2uz rhs_rect);
+static bool   __GameField_Collides(const struct Plane plane, const struct Asteroid asteroid);
+static bool   __GameField_IsShot(const struct Asteroid asteroid, const struct Bullet bullet);
 
 void GameField_Init(GameField* const game_field, uint8_t* const map, const size_t size, const struct Vector2uz rect, const struct Plane plane)
 {
@@ -253,14 +254,18 @@ static size_t __GameField_Clamp(const ptrdiff_t value, const ptrdiff_t low, cons
     return value < low ? low : value > high ? high : value;
 }
 
+static bool __GameField_Intersects(const struct Vector2z lhs_position, const struct Vector2uz lhs_rect, const struct Vector2z rhs_position, const struct Vector2uz rhs_rect)
+{
+    return lhs_position.x + lhs_rect.x > rhs_position.x && rhs_position.x + rhs_rect.x > lhs_position.x
+        && lhs_position.y + lhs_rect.y > rhs_position.y && rhs_position.y + rhs_rect.y > lhs_position.y;
+}
+
 static bool __GameField_Collides(const struct Plane plane, const struct Asteroid asteroid)
 {
-    return plane.position.x + (ptrdiff_t)plane.rect.x > asteroid.position.x && asteroid.position.x + ASTEROID_WIDTH  > plane.position.x
-        && plane.position.y + (ptrdiff_t)plane.rect.y > asteroid.position.y && asteroid.position.y + ASTEROID_HEIGHT > plane.position.y;
+    return __GameField_Intersects(plane.position, plane.rect, asteroid.position, (struct Vector2uz){ASTEROID_WIDTH, ASTEROID_HEIGHT});
 }
 
 static bool __GameField_IsShot(const struct Asteroid asteroid, const struct Bullet bullet)
 {
-    return asteroid.position.x + ASTEROID_WIDTH  > bullet.position.x && bullet.position.x + BULLET_WIDTH  > asteroid.position.x
-        && asteroid.position.y + ASTEROID_HEIGHT > bullet.position.y && bullet.position.y + BULLET_HEIGHT > asteroid.position.y;
+    return __GameField_Intersects(asteroid.position, (struct Vector2uz){ASTEROID_WIDTH, ASTEROID_HEIGHT}, bullet.position, (struct Vector2uz){BULLET_WIDTH, BULLET_HEIGHT});
 }
