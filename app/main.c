@@ -71,13 +71,13 @@ int main()
     });
 
     static Joystick joystick;
-    Joystick_Init(&joystick, &hadc, JOYSTICK_CHANNEL_X, JOYSTICK_CHANNEL_Y, JOYSTICK_CHANNEL_SW);
+    Joystick_Init(&joystick, &hadc, JOYSTICK_CHANNEL_X, JOYSTICK_CHANNEL_Y, sw_pin);
 
     while (true)
     {
         const int16_t dx   = Joystick_ReadX(&joystick);
         const int16_t dy   = Joystick_ReadY(&joystick);
-        const bool    shot = true;
+        const bool    shot = Joystick_ReadSw(&joystick);
 
         GameField_MoveAsteroids(&game_field);
         GameField_MovePlane(&game_field, dx, dy);
@@ -209,7 +209,7 @@ static void GPIO_Init(void)
     GPIO_InitTypeDef gpio_sw =
     {
         .Pin  = sw_pin.pin,
-        .Mode = HAL_GPIO_MODE_ANALOG,
+        .Mode = HAL_GPIO_MODE_GPIO_INPUT,
         .Pull = HAL_GPIO_PULL_DOWN,
         .DS   = HAL_GPIO_DS_2MA
     };

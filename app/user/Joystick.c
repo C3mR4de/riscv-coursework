@@ -4,9 +4,9 @@
 struct __Joystick
 {
     ADC_HandleTypeDef* hadc;
+    struct GPIO_Pin    sw_pin;
     uint8_t            channel_x;
     uint8_t            channel_y;
-    uint8_t            channel_sw;
     uint16_t           zero_x;
     uint16_t           zero_y;
 };
@@ -18,18 +18,17 @@ static size_t count;
 
 static int16_t __Joystick_ReadRawX(Joystick* joystick);
 static int16_t __Joystick_ReadRawY(Joystick* joystick);
-static int16_t __Joystick_ReadRawSw(Joystick* joystick);
 
-void Joystick_Init(Joystick* const joystick, ADC_HandleTypeDef* const hadc, const uint8_t channel_x, const uint8_t channel_y, const uint8_t channel_sw)
+void Joystick_Init(Joystick* const joystick, ADC_HandleTypeDef* const hadc, const uint8_t channel_x, const uint8_t channel_y, const struct GPIO_Pin sw_pin)
 {
     *joystick = &joysticks[count++];
 
     joysticks[count - 1] = (struct __Joystick)
     {
         .hadc       = hadc,
+        .sw_pin     = sw_pin,
         .channel_x  = channel_x,
         .channel_y  = channel_y,
-        .channel_sw = channel_sw
     };
 
     HAL_ADC_ContinuousEnable(hadc);
@@ -50,8 +49,7 @@ int16_t Joystick_ReadY(Joystick* const joystick)
 
 bool Joystick_ReadSw(Joystick* const joystick)
 {
-    uint16_t raw_sw = __Joystick_ReadRawSw(joystick);
-    return raw_sw > 500;
+    return HAL_GPIO_ReadPin((*joystick)->sw_pin.gpio, (*joystick)->sw_pin.pin);
 }
 
 static int16_t __Joystick_ReadRawX(Joystick* const joystick)
@@ -64,13 +62,6 @@ static int16_t __Joystick_ReadRawX(Joystick* const joystick)
 static int16_t __Joystick_ReadRawY(Joystick* const joystick)
 {
     (*joystick)->hadc->Init.Sel = (*joystick)->channel_y;
-    HAL_ADC_ChannelSet((*joystick)->hadc);
-    return (int16_t)HAL_ADC_GetValue((*joystick)->hadc);
-}
-
-static int16_t __Joystick_ReadRawSw(Joystick* const joystick)
-{
-    (*joystick)->hadc->Init.Sel = (*joystick)->channel_sw;
     HAL_ADC_ChannelSet((*joystick)->hadc);
     return (int16_t)HAL_ADC_GetValue((*joystick)->hadc);
 }
